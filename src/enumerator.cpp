@@ -389,6 +389,12 @@ vector<value> remove_equiv2(vector<value> const& values) {
   return result;
 }
 
+void sort_values(vector<value>& values) {
+  std::sort(values.begin(), values.end(), [](value a, value b) {
+    return lt_value(a, b);
+  });
+}
+
 vector<value> enumerate_for_template(
     shared_ptr<Module> module,
     value templ, int k)
@@ -405,6 +411,14 @@ vector<value> enumerate_for_template(
     while (solver.solve()) {
       fills.push_back(solver.solutionToValue());
     }
+
+    sort_values(fills);
+
+    for (value v : fills) {
+      cout << v->to_string() << endl;
+    }
+    assert(false);
+
     fills = remove_equiv(enum_conjuncts(filter_boring(fills), k));
     for (int i = 0; i < fills.size(); i++) {
       fills[i] = v_not(fills[i]);
