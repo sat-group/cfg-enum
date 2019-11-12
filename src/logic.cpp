@@ -374,11 +374,11 @@ string Exists::to_string() const {
 }
 
 string Var::to_string() const {
-  return iden_to_string(name);
+  return "var:" + ::to_string(name);
 }
 
 string Const::to_string() const {
-  return iden_to_string(name);
+  return "const: " + iden_to_string(name);
 }
 
 string Eq::to_string() const {
