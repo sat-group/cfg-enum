@@ -1,9 +1,11 @@
 #include "enumerator.h"
 
+#include <set>
+#include <algorithm>
+
 #include "logic.h"
 #include "grammar.h"
 #include "smt.h"
-#include <set>
 
 using namespace std;
 
