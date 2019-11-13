@@ -67,7 +67,7 @@ NaiveCandidateSolver::NaiveCandidateSolver(shared_ptr<Module> module, Options co
   //}
   //assert(false);
 
-  cur_indices = {};
+  cur_indices = {6221, 24820};
 }
 
 bool passes_cex(value v, Counterexample const& cex)
