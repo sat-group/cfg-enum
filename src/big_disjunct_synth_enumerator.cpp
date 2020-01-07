@@ -1,5 +1,7 @@
 #include "big_disjunct_synth_enumerator.h"
 
+#include <chrono>
+
 #include "enumerator.h"
 #include "var_lex_graph.h"
 
