@@ -5,6 +5,10 @@
 
 using namespace std;
 
+typedef std::chrono::time_point<std::chrono::high_resolution_clock> tp;
+
+tp start_time;
+
 BigDisjunctCandidateSolver::BigDisjunctCandidateSolver(shared_ptr<Module> module, int disj_arity)
   : module(module)
   , disj_arity(disj_arity)
@@ -37,6 +41,8 @@ BigDisjunctCandidateSolver::BigDisjunctCandidateSolver(shared_ptr<Module> module
 
   var_index_transitions =
       get_var_index_transitions(module->templates[0], pieces);
+
+  start_time = chrono::high_resolution_clock::now();
 }
 
 void BigDisjunctCandidateSolver::addCounterexample(Counterexample cex, value candidate)
@@ -166,9 +172,37 @@ value BigDisjunctCandidateSolver::disjunction_fuse(vector<value> values) {
   return tqd.with_body(v_or(values));
 }
 
+int iteration_count = 0;
+long long total_ns = 0;
+
+bool first_call = true;
+tp last_ret_time;
+int ret_count = 0;
+long long total_ret_ns = 0;
+
 value BigDisjunctCandidateSolver::getNext() {
+  if (!first_call) {
+    tp time2 = chrono::high_resolution_clock::now();
+    long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(time2 - last_ret_time).count();
+    total_ret_ns += ns;
+    cout << "returns: " << (ret_count * 1000000000.0 / total_ret_ns) << " stuff / second, with " << ret_count << " returns" << endl;
+  }
+
+  tp time1 = chrono::high_resolution_clock::now();
+
   while (true) {
     increment();
+    iteration_count++;
+
+    if (iteration_count % 10000 == 0) {
+      tp time2 = chrono::high_resolution_clock::now();
+      long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(time2 - time1).count();
+      total_ns += ns;
+
+      cout << "average iteration time: " << (iteration_count * 1000000000 / total_ns) << " iters / second, with " << iteration_count << " iters" << endl;
+      time1 = chrono::high_resolution_clock::now();
+    }
+
     if (done) {
       return nullptr;
     }
@@ -236,6 +270,12 @@ value BigDisjunctCandidateSolver::getNext() {
 
     if (failed) continue;
 
+    tp time2 = chrono::high_resolution_clock::now();
+    long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(time2 - time1).count();
+    total_ns += ns;
+
+    cout << "average iteration time: " << (iteration_count * 1000000000 / total_ns) << " iters / second, with " << iteration_count << " iters" << endl;
+
     vector<value> disjs;
     for (int i = 0; i < cur_indices.size(); i++) {
       disjs.push_back(pieces[cur_indices[i]]);
@@ -248,6 +288,11 @@ value BigDisjunctCandidateSolver::getNext() {
     }
 
     dump_cur_indices();
+
+    first_call = false;
+    last_ret_time = chrono::high_resolution_clock::now();
+    ret_count++;
+
     return v;
   }
 }
