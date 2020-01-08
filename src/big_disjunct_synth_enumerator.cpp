@@ -29,6 +29,7 @@ BigDisjunctCandidateSolver::BigDisjunctCandidateSolver(shared_ptr<Module> module
   //for (value p : pieces) {
   //  cout << "piece: " << p->to_string() << endl;
   //}
+  //assert(false);
   
   init_piece_to_index();
 
@@ -192,6 +193,8 @@ value BigDisjunctCandidateSolver::getNext() {
 
   tp time1 = chrono::high_resolution_clock::now();
 
+  vector<BitsetEvalResult*> bers;
+
   while (true) {
     increment();
     iteration_count++;
@@ -218,8 +221,9 @@ value BigDisjunctCandidateSolver::getNext() {
     cout << "getNext: " << v->to_string() << endl;
     }*/
 
-    vector<BitsetEvalResult*> bers;
-    bers.resize(cur_indices.size());
+    if (bers.size() != cur_indices.size()) {
+      bers.resize(cur_indices.size());
+    }
 
     bool failed = false;
     for (int i = 0; i < cexes.size(); i++) {
