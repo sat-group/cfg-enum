@@ -20,10 +20,10 @@ BigDisjunctCandidateSolver::BigDisjunctCandidateSolver(shared_ptr<Module> module
   pieces = values->values;
 
   cout << "Using " << pieces.size() << " terms" << endl;
-  //for (value p : pieces) {
-  //  cout << "piece: " << p->to_string() << endl;
-  //}
-  //assert(false);
+  for (value p : pieces) {
+    cout << "piece: " << p->to_string() << endl;
+  }
+  assert(false);
   
   init_piece_to_index();
 

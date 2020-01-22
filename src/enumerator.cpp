@@ -71,8 +71,7 @@ void getHoleInfo_(value v, vector<GrammarVar> vars, vector<HoleInfo>& res) {
     res.push_back(hi);
   }
   else {
-    //printf("value2expr got: %s\n", v->to_string().c_str());
-    assert(false && "value2expr does not support this case");
+    assert(false && "getHoleInfo does not support this case");
   }
 
 }
