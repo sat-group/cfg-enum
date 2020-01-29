@@ -25,6 +25,7 @@ OBJECTS = $(addprefix bin/,\
 	obviously_implies.o \
 	var_lex_graph.o \
 	big_disjunct_synth_enumerator.o \
+	template_extender.o \
 	lib/json11/json11.o \
 )
 

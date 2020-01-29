@@ -53,7 +53,7 @@ value strengthen_invariant_remove_disjuncts(
   return tqd.with_body(v_or(args));
 }
 
-void get_nullary_consts_(value v, vector<iden>& res) {
+void get_nullary_consts_(value v, vector<value>& res) {
   assert(v.get() != NULL);
   if (Forall* va = dynamic_cast<Forall*>(v.get())) {
     get_nullary_consts_(va->body, res);
@@ -66,7 +66,7 @@ void get_nullary_consts_(value v, vector<iden>& res) {
   }
   else if (Const* va = dynamic_cast<Const*>(v.get())) {
     if (va->sort->get_domain_as_function().size() == 0) {
-      res.push_back(va->name);
+      res.push_back(v);
     }
     return;
   }
@@ -104,8 +104,8 @@ void get_nullary_consts_(value v, vector<iden>& res) {
   }
 }
 
-vector<iden> get_nullary_consts(value v) {
-  vector<iden> res;
+vector<value> get_nullary_consts(value v) {
+  vector<value> res;
   get_nullary_consts_(v, res);
   return res;
 }
@@ -118,9 +118,13 @@ iden get_generalized_variable_name() {
 
 value generalize_const(value inv, iden id, lsort so) {
   iden gen_var_id = get_generalized_variable_name();
-  value r = replace_const_with(id, v_var(gen_var_id, so));
 
-  VarDecl decl(gen_var_id, so)
+  //value r = replace_const_with(id, v_var(gen_var_id, so));
+  map<iden, iden> substs;
+  substs.insert(make_pair(id, gen_var_id));
+  value r = inv->replace_const_with_var(substs);
+
+  VarDecl decl(gen_var_id, so);
   if (Forall* f = dynamic_cast<Forall*>(r.get())) {
     vector<VarDecl> decls = f->decls;
     decls.push_back(decl);
@@ -130,7 +134,7 @@ value generalize_const(value inv, iden id, lsort so) {
   }
 }
 
-value strengthen_invariant_generalize(
+value strengthen_invariant_generalize_consts(
   shared_ptr<Module> module,
   value invariant_so_far,
   value new_invariant)
