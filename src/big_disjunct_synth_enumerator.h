@@ -41,7 +41,7 @@ public:
   void skipAhead(int upTo);
   void dump_cur_indices();
   value disjunction_fuse(std::vector<value> values);
-  std::vector<int> get_indices_of_value(value inv);
+  std::vector<int> get_indices_of_value(value inv, bool& success);
   int get_index_of_piece(value p);
   void init_piece_to_index();
   void existing_invariants_append(std::vector<int> const& indices);

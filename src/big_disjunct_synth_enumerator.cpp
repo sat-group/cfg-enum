@@ -83,8 +83,11 @@ void BigDisjunctCandidateSolver::addExistingInvariant(value the_inv)
         module, module->templates[0], spec);
     if (inv != nullptr) {
       //cout << "normalize_into_template result is " << inv->to_string() << endl;
-      vector<int> indices = get_indices_of_value(inv);
-      existing_invariants_append(indices);
+      bool valid_indices;
+      vector<int> indices = get_indices_of_value(inv, valid_indices /* output */);
+      if (valid_indices) {
+        existing_invariants_append(indices);
+      }
 
       value norm = inv->totally_normalize();
       existing_invariant_set.insert(ComparableValue(norm));
@@ -134,11 +137,16 @@ void BigDisjunctCandidateSolver::init_piece_to_index() {
 
 int BigDisjunctCandidateSolver::get_index_of_piece(value p) {
   auto it = piece_to_index.find(ComparableValue(p));
-  assert (it != piece_to_index.end());
+  if (it == piece_to_index.end()) {
+    //cout << "get_index_of_piece: could not find piece " << p->to_string() << endl;
+    //assert(false);
+    return -1;
+  }
   return it->second;
 }
 
-vector<int> BigDisjunctCandidateSolver::get_indices_of_value(value inv) {
+vector<int> BigDisjunctCandidateSolver::get_indices_of_value(value inv, bool& success) {
+  success = true;
   while (true) {
     if (Forall* f = dynamic_cast<Forall*>(inv.get())) {
       inv = f->body;
@@ -156,12 +164,20 @@ vector<int> BigDisjunctCandidateSolver::get_indices_of_value(value inv) {
     t.resize(o->args.size());
     for (int i = 0; i < t.size(); i++) {
       t[i] = get_index_of_piece(o->args[i]);
+      if (t[i] == -1) {
+        success = false;
+        return {};
+      }
     }
     return t;
   } else {
     vector<int> t;
     t.resize(1);
     t[0] = get_index_of_piece(inv);
+    if (t[0] == -1) {
+      success = false;
+      return {};
+    }
     return t;
   }
 }
