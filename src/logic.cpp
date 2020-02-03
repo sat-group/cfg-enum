@@ -536,6 +536,76 @@ value TemplateHole::subst(iden x, value e) const {
   return v_template_hole();
 }
 
+value Forall::subst(map<iden, value> es) const {
+  return v_forall(decls, body->subst(es)); 
+}
+
+value NearlyForall::subst(map<iden, value> es) const {
+  return v_nearlyforall(decls, body->subst(es)); 
+}
+
+value Exists::subst(map<iden, value> es) const {
+  return v_exists(decls, body->subst(es)); 
+}
+
+value Var::subst(map<iden, value> es) const {
+  auto it = es.find(name);
+  if (it != es.end()) {
+    return it->second;
+  } else {
+    return v_var(name, sort);
+  }
+}
+
+value Const::subst(map<iden, value> es) const {
+  return v_const(name, sort);
+}
+
+value Eq::subst(map<iden, value> es) const {
+  return v_eq(left->subst(es), right->subst(es));
+}
+
+value Not::subst(map<iden, value> es) const {
+  return v_not(this->val->subst(es));
+}
+
+value Implies::subst(map<iden, value> es) const {
+  return v_implies(left->subst(es), right->subst(es));
+}
+
+value IfThenElse::subst(map<iden, value> es) const {
+  return v_if_then_else(cond->subst(es), then_value->subst(es), else_value->subst(es));
+}
+
+value Apply::subst(map<iden, value> es) const {
+  vector<value> new_args;
+  for (value const& arg : args) {
+    new_args.push_back(arg->subst(es));
+  }
+  return v_apply(func->subst(es), move(new_args));
+}
+
+value And::subst(map<iden, value> es) const {
+  vector<value> new_args;
+  for (value const& arg : args) {
+    new_args.push_back(arg->subst(es));
+  }
+  return v_and(move(new_args));
+}
+
+value Or::subst(map<iden, value> es) const {
+  vector<value> new_args;
+  for (value const& arg : args) {
+    new_args.push_back(arg->subst(es));
+  }
+  return v_or(move(new_args));
+}
+
+value TemplateHole::subst(map<iden, value> es) const {
+  return v_template_hole();
+}
+
+
 value Forall::subst_fun(iden func, vector<VarDecl> const& d, value e) const {
   return v_forall(decls, body->subst_fun(func, d, e)); 
 }

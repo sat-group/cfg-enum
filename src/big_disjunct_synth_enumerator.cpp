@@ -2,6 +2,7 @@
 
 #include "enumerator.h"
 #include "var_lex_graph.h"
+#include "strengthen_invariant.h"
 
 using namespace std;
 
@@ -19,11 +20,11 @@ BigDisjunctCandidateSolver::BigDisjunctCandidateSolver(shared_ptr<Module> module
   values->init_simp();
   pieces = values->values;
 
-  cout << "Using " << pieces.size() << " terms" << endl;
+  /*cout << "Using " << pieces.size() << " terms" << endl;
   for (value p : pieces) {
     cout << "piece: " << p->to_string() << endl;
   }
-  assert(false);
+  assert(false);*/
   
   init_piece_to_index();
 
@@ -74,13 +75,21 @@ void BigDisjunctCandidateSolver::existing_invariants_append(std::vector<int> con
   existing_invariant_trie.insert(indices);
 }
 
-void BigDisjunctCandidateSolver::addExistingInvariant(value inv)
+void BigDisjunctCandidateSolver::addExistingInvariant(value the_inv)
 {
-  vector<int> indices = get_indices_of_value(inv);
-  existing_invariants_append(indices);
+  vector<value> specs = specialize_invariant(module, the_inv);
+  for (value spec : specs) {
+    value inv = normalize_into_template(
+        module, module->templates[0], spec);
+    if (inv != nullptr) {
+      //cout << "normalize_into_template result is " << inv->to_string() << endl;
+      vector<int> indices = get_indices_of_value(inv);
+      existing_invariants_append(indices);
 
-  value norm = inv->totally_normalize();
-  existing_invariant_set.insert(ComparableValue(norm));
+      value norm = inv->totally_normalize();
+      existing_invariant_set.insert(ComparableValue(norm));
+    }
+  }
 }
 
 bool is_indices_subset(vector<int> const& a, vector<int> const& b, int& upTo) {

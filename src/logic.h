@@ -700,6 +700,6 @@ VarDecl freshVarDecl(lsort sort);
 std::vector<value> aggressively_split_into_conjuncts(value);
 
 value forall_append(VarDecl const& decl, value v);
-value normalize_into_template(value templ, value v);
+value normalize_into_template(std::shared_ptr<Module>, value templ, value v);
 
 #endif

@@ -36,7 +36,7 @@ value normalize_into_template(shared_ptr<Module> module, value templ, value v) {
   //ScopeMap sm;
   //return normalize_into_template_(templ, norm, sm);
 
-  TopQuantifierDesc templ_tqd(tqd);  
+  TopQuantifierDesc templ_tqd(templ);
   TopQuantifierDesc v_tqd(v);  
 
   map<iden, value> substs;

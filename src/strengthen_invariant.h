@@ -8,4 +8,8 @@ value strengthen_invariant(
   value invariant_so_far,
   value new_invariant);
 
+std::vector<value> specialize_invariant(
+  std::shared_ptr<Module> module,
+  value v);
+
 #endif
