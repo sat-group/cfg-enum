@@ -26,6 +26,7 @@ OBJECTS = $(addprefix bin/,\
 	var_lex_graph.o \
 	big_disjunct_synth_enumerator.o \
 	template_extender.o \
+	normalize_into_template.cpp.o \
 	lib/json11/json11.o \
 )
 

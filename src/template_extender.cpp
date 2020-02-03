@@ -109,3 +109,4 @@ value extend_template(shared_ptr<Module> module, value templ, int n)
 
   return template_from_counts(module, sort_to_count);
 }
+

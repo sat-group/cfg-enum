@@ -164,3 +164,46 @@ value strengthen_invariant(
       module, invariant_so_far, inv);
   return inv;
 }
+
+vector<value> get_consts_for_sort(shared_ptr<Module> module, lsort so)
+{
+  vector<value> res;
+  for (VarDecl const& decl : module->functions) {
+    if (decl.sort->get_domain_as_function().size() == 0) {
+      res.push_back(v_const(decl.name, decl.sort));
+    }
+  }
+  return res;
+}
+
+vector<value> specialize_invariant(shared_ptr<Module> module, value v)
+{
+  if (Forall* f = dynamic_cast<Forall*>(v.get())) {
+    VarDecl decl = f->decls[0];
+    value body;
+    if (f->decls.size() == 1) {
+      body = f->body;
+    } else {
+      vector<VarDecl> subdecls = f->decls;
+      subdecls.erase(subdecls.begin());
+      body = v_forall(subdecls, f->body);
+    }
+
+    vector<value> subresults = specialize_invariant(module, body);
+    vector<value> results;
+
+    vector<value> consts_for_sort =
+        get_consts_for_sort(module, decl.sort);
+
+    for (value sub : subresults) {
+      results.push_back(forall_append(decl, sub));
+      for (value con : consts_for_sort) {
+        results.push_back(sub->subst(decl.name, con));
+      }
+    }
+
+    return results;
+  } else {
+    return {v};
+  }
+}

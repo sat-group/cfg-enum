@@ -2369,3 +2369,14 @@ vector<value> aggressively_split_into_conjuncts(value v)
     assert(false && "aggressively_split_into_conjuncts does not support this case");
   }
 }
+
+value forall_append(VarDecl const& decl, value v)
+{
+  if (Forall* f = dynamic_cast<Forall*>(v.get())) {
+    vector<VarDecl> decls = f->decls;
+    decls.insert(decls.begin(), decl);
+    return v_forall(decls, f->body);
+  } else {
+    return v_forall({decl}, v);
+  }
+}
