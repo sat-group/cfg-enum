@@ -97,6 +97,8 @@ void AltDepth2CandidateSolver::addCounterexample(Counterexample cex)
       cex_results[i][j].second = BitsetEvalResult::eval_over_alternating_quantifiers(cex.conclusion, pieces[j]);
     }
   }
+
+  prioritizer.append(0);
 }
 
 void AltDepth2CandidateSolver::addExistingInvariant(value inv0)
@@ -189,7 +191,10 @@ value AltDepth2CandidateSolver::getNext() {
 
     //// Check if it violates a countereample
 
-    for (int i = 0; i < (int)cexes.size(); i++) {
+    int i;
+    for (i = prioritizer.begin();
+        i != -1; i = prioritizer.next(i))
+    {
       if (cexes[i].is_true) {
         setup_abe2(abes[i].second, cex_results[i], cur_indices);
         bool res = abes[i].second.evaluate();
@@ -239,9 +244,14 @@ value AltDepth2CandidateSolver::getNext() {
           }
         }
       }
+
+      prioritizer.record_miss(i);
     }
 
-    if (failed) continue;
+    if (failed) {
+      prioritizer.record_hit(i);
+      continue;
+    }
 
     value v = get_current_value();
 
