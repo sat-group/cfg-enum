@@ -6,6 +6,7 @@
 #include "var_lex_graph.h"
 #include "subsequence_trie.h"
 #include "template_desc.h"
+#include "cex_priority.h"
 
 class AltDisjunctCandidateSolver : public CandidateSolver {
 public:
@@ -56,6 +57,8 @@ public:
   std::map<ComparableValue, int> piece_to_index;
 
   TransitionSystem ts;
+
+  Prioritizer prioritizer;
 
   void increment();
   void skipAhead(int upTo);

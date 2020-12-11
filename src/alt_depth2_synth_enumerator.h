@@ -7,6 +7,7 @@
 #include "subsequence_trie.h"
 #include "tree_shapes.h"
 #include "template_desc.h"
+#include "cex_priority.h"
 
 class AltDepth2CandidateSolver : public CandidateSolver {
 public:
@@ -51,6 +52,8 @@ public:
   std::vector<std::pair<AlternationBitsetEvaluator, AlternationBitsetEvaluator>> abes;
 
   TransitionSystem ts;
+
+  Prioritizer prioritizer;
 
   void increment();
   //void skipAhead(int upTo);

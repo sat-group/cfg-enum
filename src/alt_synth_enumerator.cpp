@@ -104,6 +104,8 @@ void AltDisjunctCandidateSolver::addCounterexample(Counterexample cex)
       cex_results[i][j].second = BitsetEvalResult::eval_over_alternating_quantifiers(cex.conclusion, pieces[j]);
     }
   }
+
+  prioritizer.append(0);
 }
 
 void AltDisjunctCandidateSolver::existing_invariants_append(std::vector<int> const& indices)
@@ -268,7 +270,10 @@ value AltDisjunctCandidateSolver::getNext() {
 
     //// Check if it violates a countereample
 
-    for (int i = 0; i < (int)cexes.size(); i++) {
+    int i;
+    for (i = prioritizer.begin();
+        i != -1; i = prioritizer.next(i))
+    {
       if (cexes[i].is_true) {
         abes[i].second.reset_for_disj();
         for (int j = 0; j < (int)cur_indices.size(); j++) {
@@ -313,9 +318,13 @@ value AltDisjunctCandidateSolver::getNext() {
           }
         }
       }
+      prioritizer.record_miss(i);
     }
 
-    if (failed) continue;
+    if (failed) {
+      prioritizer.record_hit(i);
+      continue;
+    }
 
     //// Check if it's equivalent to an existing invariant
     //// by some normalization.
