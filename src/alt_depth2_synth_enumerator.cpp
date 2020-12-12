@@ -187,6 +187,8 @@ value AltDepth2CandidateSolver::getNext() {
 
     //// Check if it violates a countereample
 
+    cout << "filters: ";
+
     for (int i = 0; i < (int)cexes.size(); i++) {
       if (cexes[i].is_true) {
         setup_abe2(abes[i].second, cex_results[i], cur_indices);
@@ -203,7 +205,8 @@ value AltDepth2CandidateSolver::getNext() {
         //}
         if (!res) {
           failed = true;
-          break;
+          cout << "1";
+          continue;
         }
       }
       else if (cexes[i].is_false) {
@@ -211,8 +214,9 @@ value AltDepth2CandidateSolver::getNext() {
         bool res = abes[i].first.evaluate();
         //assert (res == cexes[i].is_false->eval_predicate(sanity_v));
         if (res) {
+          cout << "1";
           failed = true;
-          break;
+          continue;
         }
       }
       else {
@@ -224,12 +228,16 @@ value AltDepth2CandidateSolver::getNext() {
           bool res2 = abes[i].second.evaluate();
           //assert (res2 == cexes[i].conclusion->eval_predicate(sanity_v));
           if (!res2) {
+            cout << "1";
             failed = true;
-            break;
+            continue;
           }
         }
       }
+      cout << "0";
     }
+
+    cout << endl;
 
     if (failed) continue;
 
