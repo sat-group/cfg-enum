@@ -242,8 +242,8 @@ value AltDisjunctCandidateSolver::getNext() {
       cur_indices[i] = slice_index_map[cur_indices_sub[i]];
     }
 
-    // TODO comment this
-    /*value sanity_v;
+    #ifdef BIT_SANITY_CHECK
+    value sanity_v;
     {
       vector<value> disjs;
       for (int i = 0; i < (int)cur_indices.size(); i++) {
@@ -251,7 +251,8 @@ value AltDisjunctCandidateSolver::getNext() {
       }
       sanity_v = disjunction_fuse(disjs);
       cout << "getNext: " << sanity_v->to_string() << endl;
-    }*/
+    }
+    #endif
 
     bool failed = false;
 
@@ -275,7 +276,9 @@ value AltDisjunctCandidateSolver::getNext() {
           abes[i].second.add_disj(cex_results[i][cur_indices[j]].second);
         }
         bool res = abes[i].second.evaluate();
-        //assert (res == cexes[i].is_true->eval_predicate(sanity_v));
+        #ifdef BIT_SANITY_CHECK
+        assert (res == cexes[i].is_true->eval_predicate(sanity_v));
+        #endif
         if (!res) {
           failed = true;
           break;
@@ -287,7 +290,9 @@ value AltDisjunctCandidateSolver::getNext() {
           abes[i].first.add_disj(cex_results[i][cur_indices[j]].first);
         }
         bool res = abes[i].first.evaluate();
-        //assert (res == cexes[i].is_false->eval_predicate(sanity_v));
+        #ifdef BIT_SANITY_CHECK
+        assert (res == cexes[i].is_false->eval_predicate(sanity_v));
+        #endif
         if (res) {
           failed = true;
           break;
@@ -299,14 +304,33 @@ value AltDisjunctCandidateSolver::getNext() {
           abes[i].first.add_disj(cex_results[i][cur_indices[j]].first);
         }
         bool res = abes[i].first.evaluate();
-        //assert (res == cexes[i].hypothesis->eval_predicate(sanity_v));
+        #ifdef BIT_SANITY_CHECK
+        if (res != cexes[i].hypothesis->eval_predicate(sanity_v)) {
+          cexes[i].hypothesis->dump_sizes();
+
+          cout << sanity_v->to_string() << endl;
+          cout << "result shoudl be " << cexes[i].hypothesis->eval_predicate(sanity_v) << endl;
+          
+          assert(false);
+        }
+        #endif
         if (res) {
           abes[i].second.reset_for_disj();
           for (int j = 0; j < (int)cur_indices.size(); j++) {
             abes[i].second.add_disj(cex_results[i][cur_indices[j]].second);
           }
+          //abes[i].second.dump(abes[i].second.scratch.size() * 64);
           bool res2 = abes[i].second.evaluate();
-          //assert (res2 == cexes[i].conclusion->eval_predicate(sanity_v));
+          #ifdef BIT_SANITY_CHECK
+          if (res2 != cexes[i].conclusion->eval_predicate(sanity_v)) {
+
+            cexes[i].conclusion->dump_sizes();
+            cout << sanity_v->to_string() << endl;
+            cout << "result shoudl be " << cexes[i].conclusion->eval_predicate(sanity_v) << endl;
+            
+            assert(false);
+          }
+          #endif
           if (!res2) {
             failed = true;
             break;

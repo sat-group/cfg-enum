@@ -180,7 +180,9 @@ value AltDepth2CandidateSolver::getNext() {
 
     // TODO comment this
     //dump_cur_indices();
-    //value sanity_v = get_current_value();
+    #ifdef BIT_SANITY_CHECK
+    value sanity_v = get_current_value();
+    #endif
     //cout << "genning >>>>>>>>>>>>>>>>>>>>>>>>> " << sanity_v->to_string() << endl;
 
     bool failed = false;
@@ -191,7 +193,8 @@ value AltDepth2CandidateSolver::getNext() {
       if (cexes[i].is_true) {
         setup_abe2(abes[i].second, cex_results[i], cur_indices);
         bool res = abes[i].second.evaluate();
-        //if (res != cexes[i].is_true->eval_predicate(sanity_v)) {
+        #ifdef BIT_SANITY_CHECK
+        if (res != cexes[i].is_true->eval_predicate(sanity_v)) {
           /*cexes[i].is_true->dump();
           cout << sanity_v->to_string() << endl;
           cout << "result shoudl be " << cexes[i].is_true->eval_predicate(sanity_v) << endl;
@@ -199,8 +202,9 @@ value AltDepth2CandidateSolver::getNext() {
             cex_results[i][cur_indices[k]].second.dump();
           }*/
 
-         // assert(false);
-        //}
+          assert(false);
+        }
+        #endif
         if (!res) {
           failed = true;
           break;
@@ -209,7 +213,9 @@ value AltDepth2CandidateSolver::getNext() {
       else if (cexes[i].is_false) {
         setup_abe1(abes[i].first, cex_results[i], cur_indices);
         bool res = abes[i].first.evaluate();
-        //assert (res == cexes[i].is_false->eval_predicate(sanity_v));
+        #ifdef BIT_SANITY_CHECK
+        assert (res == cexes[i].is_false->eval_predicate(sanity_v));
+        #endif
         if (res) {
           failed = true;
           break;
@@ -218,11 +224,15 @@ value AltDepth2CandidateSolver::getNext() {
       else {
         setup_abe1(abes[i].first, cex_results[i], cur_indices);
         bool res = abes[i].first.evaluate();
-        //assert (res == cexes[i].hypothesis->eval_predicate(sanity_v));
+        #ifdef BIT_SANITY_CHECK
+        assert (res == cexes[i].hypothesis->eval_predicate(sanity_v));
+        #endif
         if (res) {
           setup_abe2(abes[i].second, cex_results[i], cur_indices);
           bool res2 = abes[i].second.evaluate();
-          //assert (res2 == cexes[i].conclusion->eval_predicate(sanity_v));
+          #ifdef BIT_SANITY_CHECK
+          assert (res2 == cexes[i].conclusion->eval_predicate(sanity_v));
+          #endif
           if (!res2) {
             failed = true;
             break;

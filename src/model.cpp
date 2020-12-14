@@ -1246,54 +1246,176 @@ BitsetEvalResult BitsetEvalResult::eval_over_foralls(shared_ptr<Model> model, va
   return ber;
 }
 
+struct Step {
+  int prod;
+  bool is_forall;
+};
+
 AlternationBitsetEvaluator AlternationBitsetEvaluator::make_evaluator(
     std::shared_ptr<Model> model, value v)
 {
   TopAlternatingQuantifierDesc taqd(v);
-  vector<int> sizes;
 
   vector<Alternation> alternations = taqd.alternations();
-  if (alternations.size() == 0) {
-    Alternation alt;
-    alt.altType = AltType::Forall;
-    alternations.push_back(alt);
-  }
 
+  vector<Step> steps;
   for (Alternation const& alt : alternations) {
     int prod = 1;
     for (VarDecl const& decl : alt.decls) {
       prod *= model->get_domain_size(decl.sort);
     }
-    sizes.push_back(prod);
+
+    if (prod > 1) {
+      Step step;
+      step.is_forall = alt.is_forall();
+      step.prod = prod;
+
+      if (steps.size() > 0 && (steps[steps.size() - 1].is_forall == step.is_forall)) {
+        steps[steps.size() - 1].prod *= prod;
+      } else {
+        steps.push_back(step);
+      }
+    }
   }
 
-  AlternationBitsetEvaluator abe;
-  abe.levels.resize(sizes.size() - 1);
+  if (steps.size() == 0) {
+    Step step;
+    step.is_forall = true;
+    step.prod = 1;
+    steps.push_back(step);
+  }
+
+  vector<BitsetLevel> levels;
+  levels.resize(steps.size() - 1);
 
   int p = 1;
-  for (int i = 0; i < (int)sizes.size() - 1; i++) {
-    p *= sizes[i];
-    abe.levels[abe.levels.size() - 1 - i].block_size = p;
-    abe.levels[abe.levels.size() - 1 - i].num_blocks = sizes[i+1];
-    abe.levels[abe.levels.size() - 1 - i].conj = alternations[i+1].is_forall();
+  for (int i = 0; i < (int)steps.size() - 1; i++) {
+    p *= steps[i].prod;
+    levels[levels.size() - 1 - i].block_size = p;
+    levels[levels.size() - 1 - i].num_blocks = steps[i+1].prod;
+    levels[levels.size() - 1 - i].conj = steps[i+1].is_forall;
   }
 
-  p *= sizes[sizes.size() - 1];
+  p *= steps[steps.size() - 1].prod;
+
+  AlternationBitsetEvaluator abe;
+  //abe.levels.resize(steps.size() - 1);
   abe.scratch.resize(p / 64 + 2);
 
-  abe.final_conj = alternations[0].is_forall();
-  if (sizes[0] % 64 == 0) {
-    abe.final_num_full_words_64 = sizes[0] / 64 - 1;
-    abe.final_last_bits = (uint64_t)(-1);
+  if (levels.size() == 0 || levels[levels.size() - 1].block_size > 64) {
+    abe.levels = levels;
+    abe.collapse_pass_conj = false;
+    abe.collapse_pass_disj = false;
+    abe.use_easy_levels = false;
+    abe.final_conj = steps[0].is_forall;
+    if (steps[0].prod % 64 == 0) {
+      abe.final_num_full_words_64 = steps[0].prod / 64 - 1;
+      abe.final_last_bits = (uint64_t)(-1);
+    } else {
+      abe.final_num_full_words_64 = steps[0].prod / 64;
+      abe.final_last_bits = (((uint64_t)1) << (steps[0].prod % 64)) - 1;
+    }
   } else {
-    abe.final_num_full_words_64 = sizes[0] / 64;
-    abe.final_last_bits = (((uint64_t)1) << (sizes[0] % 64)) - 1;
-  }
+    int i = 0;
+    while (true) {
+      if (levels[i].block_size <= 64) {
+        break;
+      }
+      abe.levels.push_back(levels[i]);
+      i++;
+    }
 
-  if (p % 64 == 0) {
-    abe.last_bits = (uint64_t)(-1);
-  } else {
-    abe.last_bits = (((uint64_t)1) << (p % 64)) - 1;
+    if (levels[i].block_size * levels[i].num_blocks > 64) {
+      // collapse pass
+      abe.collapse_pass_conj = levels[i].conj;
+      abe.collapse_pass_disj = !levels[i].conj;
+      abe.collapse_pass_left_shift_amt = 64 % levels[i].block_size;
+      int overfl = (levels[i].block_size * levels[i].num_blocks) % 64;
+      if (overfl == 0) {
+        abe.collapse_pass_final_mask = ~(uint64_t)0;
+        abe.collapse_pass_final_idx = (levels[i].block_size * levels[i].num_blocks) / 64 - 1;
+      }
+      else {
+        abe.collapse_pass_final_mask = (((uint64_t)1) << (uint64_t)overfl) - 1;
+        abe.collapse_pass_final_idx = (levels[i].block_size * levels[i].num_blocks) / 64;
+      }
+      abe.collapse_pass_target = levels[i].block_size;
+
+      /*abe.collapse_final_shift_amt = 64 - abe.collapse_pass_left_shift_amt;
+      if (abe.collapse_final_shift_amt == 64) {
+        abe.collapse_final_shift_amt = 0;
+      }*/
+
+      abe.collapse_final_shift_amt = 0;
+
+      bool is_first = true;
+
+      int cur_size = 64;
+      while (cur_size > levels[i].block_size) {
+        // smallest N such that block_size * N * 2 >= cur_size
+        // N = ceil(cur_size / block_size * 2)
+        int N = (cur_size + levels[i].block_size * 2 - 1) / (levels[i].block_size * 2);
+        if (is_first) {
+          is_first = false;
+          // -------- 64 bits ---
+          // ---- N ------
+          // AAAAAAAAAAAAAABBBBBB
+          // shift to
+          // AAAAAAAAAAAAAA
+          // BBBBBB00000000 <- this is fine because of 0s
+          // so shift by N
+          abe.collapse_final_shift_amt = N * levels[i].block_size;
+        } else {
+          // -- N ----
+          // AAAAAAAAAABBBB
+          //    -- N -----
+          // shift to
+          // AAAAAAAAAA
+          // AAAAAABBBB
+          // shift by cur_size - N
+          // can't shift any more cause there might be junk after the Bs
+          // (okay actually in this case there can't be junk, but this code
+          // is meant to be the same as the code below, where that can maybe be true)
+          EasyLevel el;
+          el.shift = cur_size - N * levels[i].block_size;
+          el.conj = levels[i].conj;
+          abe.easy_levels.push_back(el);
+        }
+        cur_size = N * levels[i].block_size;
+      }
+
+      i++;
+    } else {
+      abe.collapse_pass_conj = false;
+      abe.collapse_pass_disj = false;
+    }
+
+    while (i < (int)levels.size()) {
+      int cur_size = levels[i].block_size * levels[i].num_blocks;
+      while (cur_size > levels[i].block_size) {
+        // smallest N such that block_size * N * 2 >= cur_size
+        // N = ceil(cur_size / block_size * 2)
+        int N = (cur_size + levels[i].block_size * 2 - 1) / (levels[i].block_size * 2);
+        EasyLevel el;
+        el.shift = cur_size - N * levels[i].block_size;
+        el.conj = levels[i].conj;
+        abe.easy_levels.push_back(el);
+        cur_size = N * levels[i].block_size;
+      }
+
+      i++;
+    }
+
+    abe.use_easy_levels = true;
+
+    abe.final_conj = steps[0].is_forall;
+    if (steps[0].prod % 64 == 0) {
+      abe.final_num_full_words_64 = steps[0].prod / 64 - 1;
+      abe.final_last_bits = (uint64_t)(-1);
+    } else {
+      abe.final_num_full_words_64 = steps[0].prod / 64;
+      abe.final_last_bits = (((uint64_t)1) << (steps[0].prod % 64)) - 1;
+    }
   }
 
   return abe;

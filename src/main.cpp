@@ -12,6 +12,7 @@
 #include "template_priority.h"
 #include "z3++.h"
 #include "stats.h"
+//#include "bitset_eval_result2.h"
 
 #include <iostream>
 #include <iterator>
@@ -22,6 +23,82 @@
 #include <fstream>
 
 using namespace std;
+
+/*void benchmark_bitset() {
+  AlternationBitsetEvaluator abe;
+  abe.scratch.resize(3);
+
+  BitsetLevel bl;
+  bl.block_size = 8;
+  bl.num_blocks = 6;
+  bl.conj = true;
+  abe.levels.push_back(bl);
+
+  bl.block_size = 4;
+  bl.num_blocks = 2;
+  bl.conj = false;
+  abe.levels.push_back(bl);
+
+  abe.final_conj = true;
+  abe.final_num_full_words_64 = 0;
+  abe.final_last_bits = 0xf;
+  abe.last_bits = 0xffffffffffffLL;
+
+  AlternationBitsetEvaluator2 abe2;
+  abe2.scratch.resize(3);
+
+  EasyLevel el;
+  el.shift = 24;
+  el.conj = true;
+  abe2.levels.push_back(el);
+
+  el.shift = 16;
+  el.conj = true;
+  abe2.levels.push_back(el);
+
+  el.shift = 8;
+  el.conj = true;
+  abe2.levels.push_back(el);
+
+  el.shift = 4;
+  el.conj = false;
+  abe2.levels.push_back(el);
+
+  abe2.final_conj = true;
+  abe2.final_num_full_words_64 = 0;
+  abe2.final_last_bits = 0xf;
+  abe2.last_bits = 0xffffffffffffLL;
+
+  {
+    auto t0 = now();
+    bool res;
+    for (int i = 0; i < 10000000; i++) {
+      abe.scratch[0] = i + (int)res;
+      abe.scratch[1] = i + (int)res;
+      abe.scratch[2] = i + (int)res;
+
+      res = abe.evaluate();
+    }
+    auto t1 = now();
+    cout << res << endl;
+    cout << as_ms(t1 - t0) << endl;
+  }
+
+  {
+    auto t0 = now();
+    bool res;
+    for (int i = 0; i < 10000000; i++) {
+      abe2.scratch[0] = i + (int)res;
+      abe2.scratch[1] = i + (int)res;
+      abe2.scratch[2] = i + (int)res;
+
+      res = abe2.evaluate();
+    }
+    auto t1 = now();
+    cout << res << endl;
+    cout << as_ms(t1 - t0) << endl;
+  }
+}*/
 
 Stats global_stats;
 
@@ -570,7 +647,11 @@ void maybe_set_success(shared_ptr<Module> module, FormulaDump& fd)
   cout << "is not invariant" << endl;
 }
 
+
 int main(int argc, char* argv[]) {
+  //benchmark_bitset();
+  //return 0;
+
   for (int i = 0; i < argc; i++) {
     cout << argv[i] << " ";
   }

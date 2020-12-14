@@ -5,6 +5,8 @@
 #include <cstring>
 #include <cassert>
 
+//#define BIT_SANITY_CHECK
+
 struct BitsetEvalResult {
   std::vector<uint64_t> v;
   uint64_t last_bits;
@@ -66,14 +68,38 @@ struct BitsetLevel {
   bool conj;
 };
 
+struct EasyLevel {
+  int shift;
+  bool conj;
+};
+
+inline void print_bits64(uint64_t t) {
+  for (int i = 0; i < 64; i++) {
+    int b = (int)((t >> i) & 1);
+    std::cout << b;
+  }
+  std::cout << std::endl;
+}
+
 struct AlternationBitsetEvaluator {
-  std::vector<BitsetLevel> levels;
   std::vector<uint64_t> scratch;
+
+  std::vector<BitsetLevel> levels;
+
+  bool collapse_pass_conj;
+  bool collapse_pass_disj;
+  int collapse_pass_left_shift_amt;
+  int collapse_pass_final_idx;
+  int collapse_pass_target;
+  uint64_t collapse_pass_final_mask;
+  int collapse_final_shift_amt;
+
+  bool use_easy_levels;
+  std::vector<EasyLevel> easy_levels;
 
   bool final_conj;
   int final_num_full_words_64;
   uint64_t final_last_bits;
-  uint64_t last_bits;
 
   static AlternationBitsetEvaluator make_evaluator(
       std::shared_ptr<Model> model, value v);
@@ -90,7 +116,6 @@ struct AlternationBitsetEvaluator {
     for (int i = 0; i < (int)scratch.size(); i++) {
       scratch[i] = ~(uint64_t)0;
     }
-    scratch[scratch.size() - 1] = last_bits;
   }
   void reset_for_disj() {
     for (int i = 0; i < (int)scratch.size(); i++) {
@@ -202,10 +227,19 @@ struct AlternationBitsetEvaluator {
     }
   }
 
+  bool final_answer(uint64_t final) {
+    if (final_conj) {
+      return (final & final_last_bits)
+          == final_last_bits;
+    } else {
+      //std::cout << "final_answer: !final_conj" << std::endl;
+      //std::cout << final << std::endl;
+      //std::cout << final_last_bits << std::endl;
+      return (final & final_last_bits) != 0;
+    }
+  }
+
   bool evaluate() {
-    //std::cout << "yooo" << std::endl;
-    //dump(128);
-    
     for (int i = 0; i < (int)levels.size(); i++) {
       BitsetLevel& level = levels[i];
       if (level.conj) {
@@ -217,12 +251,107 @@ struct AlternationBitsetEvaluator {
           block_disj(j * level.block_size, level.block_size);
         }
       }
-      //dump(level.num_blocks * level.block_size);
     }
 
-    //std::cout << "mooo" << std::endl;
+    uint64_t word;
+
+    if (collapse_pass_conj) {
+      //std::cout << "collapse_pass_conj" << std::endl;
+      //dump(228);
+
+      word = ~scratch[0];
+      //std::cout << "word: "; print_bits64(word);
+      int shift = collapse_pass_left_shift_amt;
+      int target = collapse_pass_target;
+      for (int i = 1; i < collapse_pass_final_idx; i++) {
+        uint64_t w = ~scratch[i];
+        word = word
+          | (w << shift)
+          | (w >> (target - shift));
+
+        //std::cout << "shift: " << shift << std::endl;
+        shift = (shift + collapse_pass_left_shift_amt);
+        if (shift > target) {
+          shift -= target;
+        }
+        //std::cout << "w:    "; print_bits64(w);
+        //std::cout << "word: "; print_bits64(word);
+      }
+      uint64_t w = (~scratch[collapse_pass_final_idx]) & collapse_pass_final_mask;
+      word = word
+        | (w << shift)
+        | (w >> (target - shift));
+      //std::cout << "w:    "; print_bits64(w);
+      //std::cout << "word: "; print_bits64(word);
+      word = word | (word >> collapse_final_shift_amt);
+      word = ~word;
+
+      //print_bits64(word);
+
+      goto use_easy_levels_lbl;
+    } else if (collapse_pass_disj) {
+      //std::cout << "collapse_pass_disj" << std::endl;
+      //dump(90);
+
+      word = scratch[0];
+      //print_bits64(word);
+      int shift = collapse_pass_left_shift_amt;
+      int target = collapse_pass_target;
+      for (int i = 1; i < collapse_pass_final_idx; i++) {
+        uint64_t w = scratch[i];
+        word = word
+          | (w << shift)
+          | (w >> (target - shift));
+
+        //std::cout << "shift: " << shift << std::endl;
+        shift = (shift + collapse_pass_left_shift_amt);
+        if (shift > target) {
+          shift -= target;
+        }
+        //std::cout << "w:    "; print_bits64(w);
+        //std::cout << "word: "; print_bits64(word);
+      }
+      uint64_t w = scratch[collapse_pass_final_idx] & collapse_pass_final_mask;
+      word = word
+        | (w << shift)
+        | (w >> (target - shift));
+      //std::cout << "w:    "; print_bits64(w);
+      //std::cout << "word: "; print_bits64(word);
+      word = word | (word >> collapse_final_shift_amt);
+      //std::cout << "collapse_final_shift_amt " << collapse_final_shift_amt << std::endl;
+      //std::cout << "word: "; print_bits64(word);
+
+      //print_bits64(word);
+
+      goto use_easy_levels_lbl;
+    }
+
+    if (use_easy_levels) {
+      //std::cout << "use_easy_levels" << std::endl;
+      word = scratch[0];
+      //print_bits64(word);
+
+      use_easy_levels_lbl:
+
+      for (int i = 0; i < (int)easy_levels.size(); i++) {
+        EasyLevel& level = easy_levels[i];
+        //std::cout << "level " << level.conj << " " << level.shift << std::endl;
+        if (level.conj) {
+          word = word & (word >> level.shift);
+        } else {
+          word = word | (word >> level.shift);
+        }
+        //std::cout << "i = " << i << std::endl;
+        //print_bits64(word);
+      }
+
+      //print_bits64(word);
+      //print_bits64(final_last_bits);
+      //std::cout << final_conj << std::endl;
+      return final_answer(word);
+    }
+
     bool res = final_answer();
-    //std::cout << "res = " << res << std::endl;
     return res;
   }
 };
