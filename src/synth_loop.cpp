@@ -17,6 +17,7 @@
 #include "synth_enumerator.h"
 #include "utils.h"
 #include "solve.h"
+#include "extras_enumerator.h"
 
 using namespace std;
 using namespace json11;
@@ -931,8 +932,9 @@ SynthesisResult synth_loop_incremental_breadth(
       if (cex.none) {
         //Benchmarking bench_strengthen;
         //bench_strengthen.start("strengthen");
-        value strengthened_inv = options.non_accumulative ? candidate0 :
-            strengthen_invariant(module,
+        value strengthened_inv = (options.non_accumulative || options.new_strengthen)
+            ? candidate0
+            : strengthen_invariant(module,
               v_and(
                 (options.breadth_with_conjs ? conjs_plus_base_invs_plus_new_invs : base_invs_plus_new_invs)
               ), candidate0);
@@ -963,6 +965,10 @@ SynthesisResult synth_loop_incremental_breadth(
             inv_log << simplified_strengthened_inv->to_json().dump() << endl;
           }
 
+          if (ecs) {
+            ecs->filterOutdatedCexes(simplified_strengthened_inv);
+          }
+
           //if (!options.whole_space && is_invariant_with_conjectures(module, filtered_simplified_strengthened_invs)) {
           /*if (!options.whole_space && conjectures_inv(module, filtered_simplified_strengthened_invs, conjectures)) {
             cout << "invariant implies safety condition, done!" << endl;
@@ -976,6 +982,10 @@ SynthesisResult synth_loop_incremental_breadth(
         }
 
         cs->addExistingInvariant(strengthened_inv);
+        if (ecs) {
+          ecs->addExistingInvariant(strengthened_inv); // no-op
+          ecs->addExtras(get_all_strengthened(module, strengthened_inv));
+        }
       } else {
         cex_stats(cex);
         auto t1 = now();
@@ -984,6 +994,10 @@ SynthesisResult synth_loop_incremental_breadth(
         addCounterexample_ns += as_ns(t2 - t1);
         addCounterexample_count++;
         cout << "addCounterexample: " << addCounterexample_ns / 1000000 << endl;
+
+        if (ecs) {
+          ecs->addCounterexample(cex);
+        }
       }
 
       long long process_ns = as_ns(now() - process_start_t);

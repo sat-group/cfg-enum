@@ -703,6 +703,9 @@ int main(int argc, char* argv[]) {
     else if (argv[i] == string("--minimal-models")) {
       options.minimal_models = true;
     }
+    else if (argv[i] == string("--new-strengthen")) {
+      options.new_strengthen = true;
+    }
     else if (argv[i] == string("--output-chunk-dir")) {
       assert(i + 1 < argc);
       assert (output_chunk_dir == "");
@@ -745,12 +748,6 @@ int main(int argc, char* argv[]) {
       i++;
     }
     else if (argv[i] == string("--chunk-size-to-use")) {
-      assert(i + 1 < argc);
-      chunk_size_to_use = atoi(argv[i+1]);
-      assert(false && "TODO implement");
-      i++;
-    }
-    else if (argv[i] == string("--new-strengthen")) {
       assert(i + 1 < argc);
       chunk_size_to_use = atoi(argv[i+1]);
       assert(false && "TODO implement");
