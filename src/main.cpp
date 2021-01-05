@@ -588,6 +588,7 @@ int main(int argc, char* argv[]) {
   options.get_space_size = false;
   options.minimal_models = false;
   options.non_accumulative = false;
+  options.new_strengthen = false;
   //options.threads = 1;
 
   string output_chunk_dir;
@@ -598,7 +599,7 @@ int main(int argc, char* argv[]) {
   string output_formula_file;
 
   string module_filename;
-  
+
   int seed = 1234;
   bool check_inductiveness = false;
   bool check_rel_inductiveness = false;
@@ -744,6 +745,12 @@ int main(int argc, char* argv[]) {
       i++;
     }
     else if (argv[i] == string("--chunk-size-to-use")) {
+      assert(i + 1 < argc);
+      chunk_size_to_use = atoi(argv[i+1]);
+      assert(false && "TODO implement");
+      i++;
+    }
+    else if (argv[i] == string("--new-strengthen")) {
       assert(i + 1 < argc);
       chunk_size_to_use = atoi(argv[i+1]);
       assert(false && "TODO implement");

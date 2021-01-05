@@ -796,6 +796,8 @@ SynthesisResult synth_loop_incremental_breadth(
     FormulaDump const& fd,
     bool single_round)
 {
+  assert (!(options.non_accumulative && options.new_strengthen));
+
   auto t_init = now();
 
   smt::context bmcctx(smt::Backend::z3);
@@ -850,6 +852,10 @@ SynthesisResult synth_loop_incremental_breadth(
     num_iterations_outer++;
 
     shared_ptr<CandidateSolver> cs = make_candidate_solver(module, slices, true);
+    shared_ptr<ExtraCandidateEnumerator> ecs;
+    if (options.new_strengthen) {
+      ecs = shared_ptr<ExtraCandidateEnumerator>(new ExtraCandidateEnumerator());
+    }
 
     if (options.get_space_size) {
       long long s = cs->getSpaceSize();
@@ -871,7 +877,13 @@ SynthesisResult synth_loop_incremental_breadth(
       cout << endl;
 
       auto filtering_t1 = now();
-      value candidate0 = cs->getNext();
+      value candidate0;
+      if (ecs) {
+        candidate0 = ecs->getNext();
+      }
+      if (!candidate0) {
+        candidate0 = cs->getNext();
+      }
       filtering_ns += as_ns(now() - filtering_t1);
 
       context_reset();

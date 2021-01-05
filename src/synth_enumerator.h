@@ -24,6 +24,7 @@ struct Options {
   bool minimal_models;
 
   bool non_accumulative;
+  bool new_strengthen;
 
   //int threads;
 

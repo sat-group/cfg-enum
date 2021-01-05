@@ -69,6 +69,12 @@ public:
   std::vector<QSRange> grouped_by_sort() const;
 
   TopAlternatingQuantifierDesc replace_exists_with_forall() const;
+  bool has_any_exists() const {
+    for (Alternation const& alt : alts) {
+      if (alt.is_exists()) return true;
+    }
+    return false;
+  }
   
   //value rename_into(value);
   // Given this = forall A: node, B: node, C: node ...
