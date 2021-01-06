@@ -3,6 +3,8 @@
 #include "top_quantifier_desc.h"
 #include "contexts.h"
 
+#include <iostream>
+
 using namespace std;
 
 vector<value> remove(vector<value> const& ar, int j) {
@@ -144,7 +146,7 @@ std::vector<value> get_all_strengthened(
 
   vector<value> results;
 
-  for (int mask = (1 << n) - 1; mask >= 1; mask--) {
+  /*for (int mask = (1 << n) - 1; mask >= 1; mask--) {
     for (int remove_es = 0; remove_es < 2; remove_es++) {
       if (remove_es && !any_exists) {
         continue;
@@ -169,7 +171,27 @@ std::vector<value> get_all_strengthened(
 
       results.push_back(new_v);
     }
+  }*/
+
+  if (any_exists) {
+    results.push_back(taqd_mod.with_body(v_or(args)));
   }
+  if (args.size() >= 2) {
+    for (int k = 0; k < (int)args.size(); k++) {
+      vector<value> sub_args;
+      for (int j = 0; j < n; j++) {
+        if (j != k) {
+          sub_args.push_back(args[j]);
+        }
+      }
+      results.push_back(taqd.with_body(v_or(sub_args)));
+    }
+  }
+
+  //cout << "get_all_strengthened " << v->to_string() << endl;
+  //for (value res : results) {
+  //  cout << "    " << res->to_string() << endl;
+  //}
 
   return results;
 }

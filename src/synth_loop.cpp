@@ -879,11 +879,19 @@ SynthesisResult synth_loop_incremental_breadth(
 
       auto filtering_t1 = now();
       value candidate0;
+      //bool is_streng = false;
       if (ecs) {
         candidate0 = ecs->getNext();
+        //if (candidate0) {
+        //  cout << "CAND streng: " << candidate0->to_string() << endl;
+        //  is_streng = true;
+        //}
       }
       if (!candidate0) {
         candidate0 = cs->getNext();
+        //if (candidate0) {
+        //  cout << "CAND normal: " << candidate0->to_string() << endl;
+        //}
       }
       filtering_ns += as_ns(now() - filtering_t1);
 
@@ -930,6 +938,10 @@ SynthesisResult synth_loop_incremental_breadth(
 
       bool is_nonredundant;
       if (cex.none) {
+        //if (is_streng) {
+        //  cout << "GOOD ONE" << endl;
+        //}
+
         //Benchmarking bench_strengthen;
         //bench_strengthen.start("strengthen");
         value strengthened_inv = (options.non_accumulative || options.new_strengthen)
@@ -969,7 +981,7 @@ SynthesisResult synth_loop_incremental_breadth(
             ecs->filterOutdatedCexes(simplified_strengthened_inv);
           }
 
-          //if (!options.whole_space && is_invariant_with_conjectures(module, filtered_simplified_strengthened_invs)) {
+          //if (!options.whole_space && is_invariant_with_conjectures(module, filtered_simplified_strengthened_invs)) 
           /*if (!options.whole_space && conjectures_inv(module, filtered_simplified_strengthened_invs, conjectures)) {
             cout << "invariant implies safety condition, done!" << endl;
             dump_stats(cs->getProgress(), cexstats, t_init, num_redundant, filtering_ns/1000000, 0);
@@ -987,6 +999,10 @@ SynthesisResult synth_loop_incremental_breadth(
           ecs->addExtras(get_all_strengthened(module, strengthened_inv));
         }
       } else {
+        //if (is_streng) {
+        //  cout << "BAD ONE" << endl;
+        //}
+
         cex_stats(cex);
         auto t1 = now();
         cs->addCounterexample(cex);
