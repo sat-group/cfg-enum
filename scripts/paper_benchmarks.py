@@ -86,7 +86,7 @@ class PaperBench(object):
       + (["--pre-bmc"] if self.pre_bmc else [])
       + (["--post-bmc"] if self.post_bmc else [])
       + (["--by-size", "--non-accumulative"] if self.nonacc else [])
-      + (["--new-strengthen"] if self.nonacc else [])
+      + (["--new-strengthen"] if self.newstr else [])
       + (["--whole-space"] if self.whole else [])
       + (["--finisher-only"] if self.finisher_only else [])
     )
