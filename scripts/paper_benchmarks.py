@@ -22,7 +22,7 @@ all_procs = []
 DEFAULT_THREADS = 8
 
 class PaperBench(object):
-  def __init__(self, partition, ivyname, config, threads=DEFAULT_THREADS, seed=1, mm=True, pre_bmc=False, post_bmc=False, nonacc=False, whole=False, expect_success=True, finisher_only=False, main=False, is_long=False):
+  def __init__(self, partition, ivyname, config, threads=DEFAULT_THREADS, seed=1, mm=True, pre_bmc=False, post_bmc=False, nonacc=False, whole=False, expect_success=True, finisher_only=False, main=False, is_long=False, newstr=False):
     self.partition = partition
 
     self.ivyname = ivyname
@@ -33,10 +33,13 @@ class PaperBench(object):
     self.pre_bmc = pre_bmc
     self.post_bmc = post_bmc
     self.nonacc = nonacc
+    self.newstr = newstr
     self.whole = whole
     self.expect_success = expect_success
     self.finisher_only = finisher_only
     self.is_long = is_long
+
+    assert not (nonacc and newstr)
 
     self.args = self.get_args()
     self.name = self.get_name()
@@ -53,6 +56,8 @@ class PaperBench(object):
       name += "mm_"
     if self.nonacc:
       name += "nonacc_"
+    if self.newstr:
+      name += "newstr_"
     if self.whole:
       name += "whole_"
     if self.finisher_only:
@@ -81,6 +86,7 @@ class PaperBench(object):
       + (["--pre-bmc"] if self.pre_bmc else [])
       + (["--post-bmc"] if self.post_bmc else [])
       + (["--by-size", "--non-accumulative"] if self.nonacc else [])
+      + (["--new-strengthening"] if self.nonacc else [])
       + (["--whole-space"] if self.whole else [])
       + (["--finisher-only"] if self.finisher_only else [])
     )
@@ -88,6 +94,17 @@ class PaperBench(object):
 benches = [ ]
 
 THREADS = 8
+
+for i in range(1, THREADS + 1):
+
+  benches.append(PaperBench(8, "paxos.ivy", "basic_b", newstr=True, threads=i, expect_success=False))
+  benches.append(PaperBench(8, "paxos.ivy", "basic_b", nonacc=True, threads=i, expect_success=False))
+  benches.append(PaperBench(8, "paxos.ivy", "basic_b", threads=i, expect_success=False))
+
+  benches.append(PaperBench(8, "learning-switch-ternary.ivy", "basic", newstr=True, threads=i))
+  benches.append(PaperBench(8, "learning-switch-ternary.ivy", "basic", nonacc=True, threads=i))
+  benches.append(PaperBench(8, "learning-switch-ternary.ivy", "basic", threads=i))
+
 
 #benches.append(PaperBench(6, "paxos.ivy", config="auto_breadth", seed=1, nonacc=True))
 #benches.append(PaperBench(1, "multi_paxos.ivy", config="auto_breadth", seed=1, nonacc=True))
