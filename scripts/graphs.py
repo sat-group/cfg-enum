@@ -730,8 +730,8 @@ def make_comparison_table(input_directory, table, median_of=5):
   I4_COL = 'I4~\\cite{I4}'
   FOL_COL = 'FOL~\\cite{fol-sep}'
 
-  MAX_TERMS_STR = '$mt$'
-  MAX_TERMS_M1_STR = '$mt_B$'
+  MAX_TERMS_STR = '\\mt'
+  MAX_TERMS_M1_STR = '\\mtb'
 
   SPLIT_COL = True
 
@@ -1794,7 +1794,7 @@ def main():
   #make_smt_stats_table(input_directory)
   #make_opt_graphs_main(input_directory, both=True)
   #make_optimization_step_table(input_directory)
-  make_comparison_table(input_directory, 1, median_of=1)
+  make_comparison_table(input_directory, 1, median_of=5)
   #misc_stats(input_directory)
   #templates_table(input_directory)
 

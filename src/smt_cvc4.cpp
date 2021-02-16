@@ -275,7 +275,7 @@ namespace smt_cvc4 {
       smt.assertFormula(e->ex);
     }
 
-    void dump(ofstream&) override;
+    void dump(ostream&) override;
   };
 
   shared_ptr<_expr> func_decl::call(_expr_vector* _args) {
@@ -557,6 +557,7 @@ shared_ptr<Model> Model::extract_cvc4(
 }
 
 extern bool enable_smt_logging;
+extern long long solver_ms;
 
 namespace smt_cvc4 {
   //////////////////////
@@ -583,9 +584,10 @@ namespace smt_cvc4 {
 
     long long ms = as_ms(t2 - t1);
     smt::log_to_stdout(ms, true, log_info, res_to_string(res));
-    if (enable_smt_logging) {
-      log_smtlib(ms, res_to_string(res));
-    }
+    solver_ms = ms;
+    //if (enable_smt_logging) {
+    //  log_smtlib(ms, res_to_string(res));
+    //}
 
     global_stats.add_cvc4(ms);
 
@@ -594,7 +596,7 @@ namespace smt_cvc4 {
     return smt::SolverResult::Unknown;
   }
 
-  void solver::dump(ofstream& of) {
+  void solver::dump(ostream& of) {
     of << "solver::dump not implemented for cvc4" << endl;
   }
 }

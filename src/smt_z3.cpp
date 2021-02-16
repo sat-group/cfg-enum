@@ -200,7 +200,7 @@ namespace smt_z3 {
       z3_solver.add(e->ex);
     }
 
-    void dump(ofstream&) override;
+    void dump(ostream&) override;
   };
 
   std::shared_ptr<_expr> func_decl::call(_expr_vector* _args) {
@@ -479,6 +479,7 @@ shared_ptr<Model> Model::extract_z3(
 }
 
 extern bool enable_smt_logging;
+extern long long solver_ms;
 
 namespace smt_z3 {
 
@@ -510,10 +511,11 @@ namespace smt_z3 {
     auto t2 = now();
 
     long long ms = as_ms(t2 - t1);
+    solver_ms = ms;
     smt::log_to_stdout(ms, false, log_info, res_to_string(res));
-    if (enable_smt_logging) {
-      log_smtlib(ms, res_to_string(res));
-    }
+    //if (enable_smt_logging) {
+    //  log_smtlib(ms, res_to_string(res));
+    //}
 
     global_stats.add_z3(ms);
 
@@ -522,7 +524,7 @@ namespace smt_z3 {
     return smt::SolverResult::Unknown;
   }
 
-  void solver::dump(ofstream& of) {
+  void solver::dump(ostream& of) {
     of << z3_solver << endl;
   }
 

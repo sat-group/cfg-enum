@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <sstream>
 
 #include "stats.h"
 #include "benchmarking.h"
@@ -55,6 +56,66 @@ smt::context cvc4_ctx_quick() {
   return _cvc4_ctx_quick;
 }
 
+struct Entry {
+  bool is_cvc4;
+  bool sat;
+  bool unsat;
+  bool unknown;
+  long long ms;
+
+  Entry() : is_cvc4(false), sat(false), unsat(false), unknown(false), ms(0) { }
+};
+
+long long solver_ms;
+
+int smt_id = 0;
+string log_directory;
+
+void write_smt_log(stringstream& smtlog_ss, vector<Entry> const& entries,
+    string const& log_info)
+{
+  smt_id++;
+
+  string idstr = to_string(smt_id);
+  while (idstr.size() < 6) {
+    idstr = "0" + idstr;
+  }
+
+  string filename = log_directory;
+  assert (filename != "");
+  if (filename[filename.size() - 1] != '/') {
+    filename += '/';
+  }
+
+  filename += idstr + ".smt";
+
+  ofstream myfile;
+  myfile.open(filename);
+
+  myfile << "; " << log_info << endl << endl;
+
+  for (Entry const& entry : entries) {
+    myfile << "; API ";
+    if (entry.is_cvc4) {
+      myfile << "CVC4-prerelease-1.8";
+    } else {
+      myfile << "Z3-4.8.9";
+    }
+
+    myfile << " , " << entry.ms << " ms , ";
+
+    if (entry.sat) myfile << "Sat";
+    else if (entry.unsat) myfile << "Unsat";
+    else if (entry.unknown) myfile << "Unknown";
+    else { assert(false); }
+  }
+
+  string s = smtlog_ss.str();
+  myfile << endl << s << endl;
+  myfile << "(check-sat)" << endl;
+
+  myfile.close();
+}
 
 ContextSolverResult context_solve(
     std::string const& log_info,
@@ -69,8 +130,13 @@ ContextSolverResult context_solve(
   auto t1 = now();
 
   int num_fails = 0; 
+
+  stringstream smtlog_ss;
+  vector<Entry> entries;
+
   while (true) {
-    smt::context ctx = (num_fails % 2 == 0
+    bool use_cvc4 = !(num_fails % 2 == 0);
+    smt::context ctx = (!use_cvc4
         ? (st == Strictness::Quick ? z3_ctx_quick() : z3_ctx_normal())
         : (st == Strictness::Quick ? cvc4_ctx_quick() : cvc4_ctx_normal())
     );
@@ -79,7 +145,18 @@ ContextSolverResult context_solve(
     vector<shared_ptr<ModelEmbedding>> es = f(bgc);
 
     bgc->solver.set_log_info(log_info);
+    if (num_fails == 0) {
+      bgc->solver.p->dump(smtlog_ss);
+    }
     smt::SolverResult res = bgc->solver.check_result();
+
+    Entry entry;
+    entry.is_cvc4 = use_cvc4;
+    entry.ms = solver_ms;
+    if (res == smt::SolverResult::Unknown) entry.unknown = true;
+    if (res == smt::SolverResult::Sat) entry.sat = true;
+    if (res == smt::SolverResult::Unsat) entry.unsat = true;
+    entries.push_back(entry);
 
     if (
          st == Strictness::Indef
@@ -121,6 +198,8 @@ ContextSolverResult context_solve(
         cout << "TryHard failure" << endl;
         numTryHardFailures++;
       }
+
+      write_smt_log(smtlog_ss, entries, log_info);
 
       return csr;
     }

@@ -24,6 +24,7 @@
 using namespace std;
 
 Stats global_stats;
+extern string log_directory;
 
 bool do_invariants_imply_conjecture(shared_ptr<ConjectureContext> conjctx) {
   smt::solver& solver = conjctx->ctx->solver;
@@ -719,6 +720,12 @@ int main(int argc, char* argv[]) {
     }
     else if (argv[i] == string("--log-smt-files")) {
       enable_smt_logging = true;
+    }
+    else if (argv[i] == string("--smt-log-dir")) {
+      assert(i + 1 < argc);
+      assert (log_directory == "");
+      log_directory = argv[i+1];
+      i++;
     }
     else if (argv[i] == string("--pre-bmc")) {
       options.pre_bmc = true;

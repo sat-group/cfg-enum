@@ -139,7 +139,11 @@ def run_synthesis(logfile_base, run_id, json_filename, args, use_stdout=False):
   try:
     logfilename = logfile_base + "/" + run_id
 
+    smtlogdir = os.path.join("smtlogs", logfilename)
+    os.makedirs(smtlogdir)
+
     cmd = ["./synthesis", "--input-module", json_filename,
+        "--smt-log-dir", smtlogdir,
         "--stats-file", make_stats_file()] + args
 
     print("run " + run_id + ": " + " ".join(cmd) + " > " + logfilename)
