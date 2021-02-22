@@ -108,6 +108,8 @@ void write_smt_log(stringstream& smtlog_ss, vector<Entry> const& entries,
     else if (entry.unsat) myfile << "Unsat";
     else if (entry.unknown) myfile << "Unknown";
     else { assert(false); }
+
+    myfile << endl;
   }
 
   string s = smtlog_ss.str();
